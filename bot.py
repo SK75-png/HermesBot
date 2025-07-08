@@ -1,22 +1,23 @@
-import logging
 import os
-from aiogram import Bot, Dispatcher, executor, types
+import asyncio
+import logging
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message
 
-# Получение токена из переменных окружения Railway
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN переменная окружения не установлена!")
+    raise RuntimeError("BOT_TOKEN не задан!")
 
-# Создание объектов бота и диспетчера
+logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
-# Хендлер на команду /start
-@dp.message_handler(commands=["start"])
-async def start_command(message: types.Message):
-    await message.reply("Привет! Я работаю 24/7 🚀")
+@dp.message(F.text)
+async def echo_handler(message: Message):
+    await message.answer(f"Вы написали: {message.text}")
 
-# Точка входа
+async def main():
+    await dp.start_polling(bot, skip_updates=True)
+
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
