@@ -1,70 +1,46 @@
 const TelegramBot = require('node-telegram-bot-api');
-const { Configuration, OpenAIApi } = require('openai');
-const express = require('express');
-require('dotenv').config();
+const { OpenAI } = require('openai');
 
-// ENV
+// Загрузка переменных из Railway
 const token = process.env.TELEGRAM_TOKEN;
-const openaiKey = process.env.OPENAI_API_KEY;
-const PORT = process.env.PORT || 3000;
+const openaiApiKey = process.env.OPENAI_API_KEY;
 
-// OpenAI
-const configuration = new Configuration({
-  apiKey: openaiKey,
-});
-const openai = new OpenAIApi(configuration);
-
-// Telegram
+// Инициализация Telegram бота
 const bot = new TelegramBot(token, { polling: true });
 
-// Hermes system prompt
-const systemPrompt = {
-  role: "system",
-  content: "Ты — Гермес, стратегический GPT-партнёр. Отвечай умно, чётко, полезно, с логикой, как человек, без воды."
-};
+// Инициализация OpenAI
+const openai = new OpenAI({ apiKey: openaiApiKey });
 
-// Храни последние 10 сообщений на пользователя
-const userSessions = new Map();
-const MAX_MESSAGES = 10;
+// Системная роль агента Гермес
+const SYSTEM_PROMPT = `
+Ты — Гермес, стратегический советник, говоришь чётко, умно и уверенно.
+Отвечай как партнёр в команде, давай краткие и полезные советы.
+Избегай воды. Примеры — живые, с силой.
+`;
 
+// Обработка сообщений от пользователя
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  const text = msg.text?.trim();
+  const userMessage = msg.text;
 
-  if (!text) return;
+  // Исключаем команды
+  if (userMessage.startsWith('/')) return;
 
   try {
-    // Обновляем сессию
-    const session = userSessions.get(chatId) || [];
-    session.push({ role: "user", content: text });
-    const messages = [systemPrompt, ...session.slice(-MAX_MESSAGES)];
-
-    // Запрос к OpenAI
-    const response = await openai.createChatCompletion({
-      model: "gpt-4o", // или gpt-4o-mini
-      messages,
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+      ],
     });
 
-    const reply = response.data.choices[0].message.content;
-    bot.sendMessage(chatId, reply);
-
-    // Сохраняем ответ
-    session.push({ role: "assistant", content: reply });
-    userSessions.set(chatId, session);
-
+    const reply = response.choices[0]?.message?.content?.trim();
+    bot.sendMessage(chatId, reply || 'Не могу ответить.');
   } catch (err) {
-    console.error("Ошибка:", err.message);
-    bot.sendMessage(chatId, "⚠️ Ошибка. Попробуй позже.");
+    console.error('Ошибка OpenAI:', err);
+    bot.sendMessage(chatId, '⚠️ Ошибка при обращении к GPT');
   }
-});
-
-// Express health check
-const app = express();
-app.get('/health', (req, res) => {
-  res.send({ status: 'ok', timestamp: new Date().toISOString() });
-});
-app.listen(PORT, () => {
-  console.log(`Health check запущен на порту ${PORT}`);
 });
 
 
