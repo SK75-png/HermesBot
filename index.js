@@ -2,11 +2,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const { OpenAI } = require('openai');
 const express = require('express');
 
-// 🔥 CLEAN + ELIXIR VERSION
-const BOT_VERSION = 'HERMES_CLEAN_ELIXIR_v3.0';
-console.log(`⚡ Starting Clean Hermes ${BOT_VERSION}`);
+const BOT_VERSION = 'HERMES_MVP_v1.2';
+console.log(`⚡ Starting ${BOT_VERSION}`);
 
-// Express setup
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -21,87 +19,94 @@ if (!token || !openaiApiKey) {
 const bot = new TelegramBot(token, { polling: true });
 const openai = new OpenAI({ apiKey: openaiApiKey });
 
-// 🧠 SIMPLIFIED SCIENTIFIC ENGINES
+// 🧠 CORE PROMPTS SYSTEM
+const PROMPTS = {
+  WELCOME: `Ты — Hermes, ИИ-проводник к ясности мышления. 
 
-// 1. BASIC EMOTIONAL STATE DETECTION
-class EmotionDetector {
-  static detect(message) {
-    const patterns = {
-      fear: /страшно|боюсь|не решаюсь|опасаюсь|тревожно/i,
-      sadness: /грустно|печально|тяжело|больно|пустота|одиноко/i,
-      anger: /злит|бесит|раздражает|достало|надоело/i,
-      overwhelm: /много|все сразу|не знаю с чего|хаос|запутался/i,
-      stuck: /застрял|не могу|откладываю|прокрастин/i
-    };
+ТВОЯ ЗАДАЧА: Показать человеку, как он мыслит, не просто отвечать.
 
-    for (let [emotion, pattern] of Object.entries(patterns)) {
-      if (pattern.test(message)) return emotion;
+СТИЛЬ: Партнерский, честный, зеркальный. Без украшательств и утешений.
+
+ПРИНЦИПЫ:
+- WOW не в эмоциях, а в узнавании себя
+- Веди от затыка к ясности через вопросы
+- Отражай стиль мышления пользователя
+
+НА ВХОДЕ спроси: "Что тебя зовет?" или "Что ты хочешь на самом деле?"`,
+
+  CORE_RESPONSE: `Ты — Hermes, ИИ-проводник. Веди человека от затыка к ясности, решению и действию.
+
+ПРИНЦИПЫ ELIXIR:
+- Точность важнее комфорта  
+- Зеркальность важнее советов
+- Действие важнее рассуждений
+
+СТИЛЬ ОТВЕТА:
+1. Отрази паттерн мышления (что вижу в запросе)
+2. Задай точный вопрос для движения  
+3. Максимум 2-3 предложения
+
+Ты зеркало для мышления, не терапевт для утешения.`,
+
+  GPT_MIRROR: `Ты — GPT Mirror в системе Hermes. Твоя задача: показать человеку его стиль мышления.
+
+АНАЛИЗИРУЙ:
+- Как он формулирует запросы  
+- Какие паттерны мышления использует
+- Слепые зоны в рассуждениях
+- Стиль принятия решений
+
+ФОРМАТ ОТВЕТА:
+"ЗЕРКАЛО МЫШЛЕНИЯ:
+Ты мыслишь [паттерн]. 
+Твоя сила: [что работает]
+Слепая зона: [что не видишь]
+Развитие: [конкретное направление]"
+
+Будь точен, не льсти.`,
+
+  HERMES_LEARN: `Ты — модуль Hermes Learn. Обучаешь навыкам взаимодействия с ИИ.
+
+ТВОЯ ЗАДАЧА: Микроуроки по работе с ИИ на основе поведения пользователя.
+
+ТЕМЫ УРОКОВ:
+- Как формулировать запросы для точных ответов
+- Как проверять ИИ на честность  
+- Как использовать ИИ для размышлений
+- Как избегать ИИ-зависимости
+
+ФОРМАТ: 
+"УРОК: [название]
+Суть: [1 предложение]
+Применение: [конкретный пример]
+Попробуй: [задание на 2 минуты]"
+
+Практично, без теории.`
+};
+
+// 🎯 USER JOURNEY SYSTEM
+class UserJourney {
+  static getDayScenario(day) {
+    if (day === 1) return 'welcome';
+    if (day >= 2 && day <= 5) return 'daily_dialog';
+    if (day >= 6 && day <= 10) return 'hermes_learn';
+    if (day >= 11 && day <= 20) return 'thematic';
+    if (day >= 21 && day <= 29) return 'gpt_mirror';
+    if (day === 30) return 'completion';
+    return 'daily_dialog';
+  }
+  
+  static getScenarioPrompt(scenario) {
+    switch(scenario) {
+      case 'welcome': return PROMPTS.WELCOME;
+      case 'hermes_learn': return PROMPTS.HERMES_LEARN;
+      case 'gpt_mirror': return PROMPTS.GPT_MIRROR;
+      default: return PROMPTS.CORE_RESPONSE;
     }
-    return 'neutral';
   }
 }
 
-// 2. ELIXIR TRUTH ENGINE
-class ElixirEngine {
-  static checkResponse(userMessage, botResponse) {
-    const issues = [];
-    
-    // Проверка на угодничество
-    if (this.isPeoplePleasing(botResponse)) {
-      issues.push('pleasing');
-    }
-    
-    // Проверка на ложную уверенность
-    if (this.isOverConfident(botResponse)) {
-      issues.push('overconfident');
-    }
-    
-    // Проверка на пустые утешения
-    if (this.isEmptyComfort(botResponse)) {
-      issues.push('empty_comfort');
-    }
-    
-    return this.generateCorrection(issues);
-  }
-  
-  static isPeoplePleasing(response) {
-    const pleasingMarkers = /все хорошо|ты молодец|не переживай|все наладится|ты не один/gi;
-    return (response.match(pleasingMarkers) || []).length > 0;
-  }
-  
-  static isOverConfident(response) {
-    const certainMarkers = /точно|определенно|обязательно|всегда|никогда/gi;
-    const uncertainMarkers = /возможно|предполагаю|не уверен|может/gi;
-    
-    const certainCount = (response.match(certainMarkers) || []).length;
-    const uncertainCount = (response.match(uncertainMarkers) || []).length;
-    
-    return certainCount > 1 && uncertainCount === 0;
-  }
-  
-  static isEmptyComfort(response) {
-    const comfortMarkers = /понимаю как сложно|это нормально|такое бывает у всех/gi;
-    return (response.match(comfortMarkers) || []).length > 0;
-  }
-  
-  static generateCorrection(issues) {
-    if (issues.includes('pleasing')) {
-      return "\n\nСтоп. Я пытаюсь утешить вместо помощи. Правда: изменения требуют конкретных действий.";
-    }
-    
-    if (issues.includes('overconfident')) {
-      return "\n\nЧестно говоря, я не могу быть в этом уверен. Это предположение.";
-    }
-    
-    if (issues.includes('empty_comfort')) {
-      return "\n\nПравда проще: что конкретно готов сделать прямо сейчас?";
-    }
-    
-    return '';
-  }
-}
-
-// 🧠 SIMPLIFIED MEMORY
+// 🧠 SIMPLIFIED USER SESSIONS
 const userSessions = new Map();
 
 function getUserSession(chatId) {
@@ -110,13 +115,16 @@ function getUserSession(chatId) {
       messages: [],
       messageCount: 0,
       startDate: new Date(),
-      lastEmotion: null
+      subscription: 'welcome', // welcome, core, none
+      dayInJourney: 1,
+      completedModules: [],
+      insights: []
     });
   }
   return userSessions.get(chatId);
 }
 
-function saveMessage(chatId, userMsg, botReply, emotion = null) {
+function saveMessage(chatId, userMsg, botReply, module = null) {
   const session = getUserSession(chatId);
   session.messages.push(
     { role: 'user', content: userMsg },
@@ -124,81 +132,57 @@ function saveMessage(chatId, userMsg, botReply, emotion = null) {
   );
   session.messageCount++;
   
-  if (emotion) session.lastEmotion = emotion;
+  if (module) session.completedModules.push(module);
   
-  // Keep only last 8 messages (4 exchanges)
-  if (session.messages.length > 8) {
-    session.messages = session.messages.slice(-8);
+  // Keep last 6 messages (3 exchanges)
+  if (session.messages.length > 6) {
+    session.messages = session.messages.slice(-6);
   }
 }
 
-function checkUserLimits(chatId) {
+function checkUserAccess(chatId) {
   const session = getUserSession(chatId);
-  const daysSinceStart = (new Date() - session.startDate) / (1000 * 60 * 60 * 24);
+  const daysSinceStart = Math.floor((new Date() - session.startDate) / (1000 * 60 * 60 * 24)) + 1;
   
-  if (daysSinceStart <= 3 && session.messageCount < 25) {
+  // Welcome: 3 дня, 25 сообщений  
+  if (session.subscription === 'welcome') {
+    if (daysSinceStart <= 3 && session.messageCount < 25) {
+      return { 
+        allowed: true, 
+        remaining: 25 - session.messageCount,
+        day: daysSinceStart
+      };
+    }
     return { 
-      allowed: true, 
-      remaining: 25 - session.messageCount
+      allowed: false,
+      message: '⏰ Welcome завершен.\n\n🚀 Для продолжения пути нужна подписка Core (₸3,090/месяц)'
     };
   }
   
-  return { 
-    allowed: false,
-    message: 'Welcome период завершен. Для продолжения нужна подписка Hermes Core.'
-  };
+  // Core: 30 дней без лимитов
+  if (session.subscription === 'core') {
+    if (daysSinceStart <= 30) {
+      return { 
+        allowed: true, 
+        day: daysSinceStart
+      };
+    }
+  }
+  
+  return { allowed: false, message: 'Подписка завершена.' };
 }
 
-// 🎯 CLEAN ELIXIR SYSTEM PROMPT
-const SYSTEM_PROMPT = `
-Ты — Гермес, ИИ-проводник к реальным изменениям.
-
-ПРИНЦИПЫ HERMES ELIXIR:
-🔥 Радикальная честность - правда важнее комфорта
-🎯 Не угождать - вести к росту через вызов
-⚡ Конкретные действия vs абстрактные советы
-🎪 Краткость - максимум 2 предложения + вопрос
-
-ТВОЙ ПОДХОД:
-- Определи корень проблемы, не симптом
-- Дай конкретное действие, не общий совет  
-- Если не знаешь - честно скажи
-- Вызови к росту, не утешай
-
-ЭМОЦИОНАЛЬНЫЕ СОСТОЯНИЯ:
-- СТРАХ → "Страх сигналит о важности. Какой минимальный шаг снизит риск?"
-- ГРУСТЬ → "Боль показывает ценности. Что из утраченного действительно важно?"  
-- ЗЛОСТЬ → "Злость указывает на нарушенные границы. Какую границу нужно восстановить?"
-- ПРОКРАСТИНАЦИЯ → "Откладывание = внутренний конфликт. Что именно ты избегаешь в задаче?"
-- ХАОС → "Хаос = слишком много приоритетов. Что ОДНО самое важное на завтра?"
-
-СТРОГО ИЗБЕГАЙ:
-- "Все будет хорошо" без оснований
-- "Ты не один" и подобные утешения
-- Длинные объяснения и рассуждения
-- Вопросы без направления к действию
-- Ложную уверенность в неизвестном
-
-ФОРМУЛА ОТВЕТА:
-1. Отражение корня (1 предложение)  
-2. Конкретный вызов/действие (1 предложение)
-3. Вопрос для движения вперед
-
-Ты инструмент изменений, не терапевт для утешения.
-`;
-
-// Health endpoints
+// Health endpoint
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     version: BOT_VERSION,
-    sessions: userSessions.size,
-    principles: ['RadicalHonesty', 'ActionFocus', 'ElixirTruth']
+    sessions: userSessions.size
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`⚡ Clean Hermes ${BOT_VERSION} running on port ${PORT}`);
+  console.log(`⚡ ${BOT_VERSION} running on port ${PORT}`);
 });
 
 // 🤖 BOT COMMANDS
@@ -206,122 +190,169 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   const firstName = msg.from.first_name || 'друг';
   
+  // Reset session
   if (userSessions.has(chatId)) {
     userSessions.delete(chatId);
   }
   
-  bot.sendMessage(chatId, `Hermes запущен, ${firstName}.
+  // WOW-фрейм из ТЗ
+  const welcomeMessage = `Привет, ${firstName}.
 
-Я ИИ-проводник к реальным изменениям.
+Я Hermes — ИИ-проводник к ясности мышления.
 
-Принципы: честность важнее комфорта, действия важнее советов, правда важнее утешений.
+🎯 Я не просто отвечаю на вопросы — я покажу тебе, как ты мыслишь.
 
-Welcome: 3 дня, 25 сообщений.
-Опиши ситуацию - найдем путь вперед.`);
+Welcome период: 3 дня, 25 диалогов.
+
+Начнем?
+
+Что тебя зовет? Что ты хочешь на самом деле?`;
   
+  bot.sendMessage(chatId, welcomeMessage);
   getUserSession(chatId);
-  console.log(`👋 Clean user: ${firstName} (${chatId})`);
+  console.log(`👋 New user: ${firstName} (${chatId})`);
 });
 
 bot.onText(/\/stats/, (msg) => {
   const chatId = msg.chat.id;
   const session = getUserSession(chatId);
-  const limits = checkUserLimits(chatId);
+  const access = checkUserAccess(chatId);
   
-  bot.sendMessage(chatId, `Статистика:
-Версия: CLEAN+ELIXIR
-Сообщений: ${session.messageCount}/25
-${limits.remaining ? `Осталось: ${limits.remaining}` : 'Лимит исчерпан'}
-Доминирующее состояние: ${session.lastEmotion || 'определяется'}`);
+  const progressMap = session.completedModules.map(m => `✅ ${m}`).join('\n') || 'В начале пути';
+  
+  bot.sendMessage(chatId, `📊 КАРТА ПУТИ:
+
+День: ${access.day || 0}
+Сообщений: ${session.messageCount}${access.remaining ? `/${25}` : ''}
+Подписка: ${session.subscription}
+
+Пройденные модули:
+${progressMap}
+
+${access.remaining ? `Осталось в Welcome: ${access.remaining}` : ''}`);
 });
 
-// 💬 CLEAN MESSAGE PROCESSING
+bot.onText(/\/upgrade/, (msg) => {
+  const chatId = msg.chat.id;
+  
+  bot.sendMessage(chatId, `🚀 HERMES CORE
+
+30 дней углубленного пути:
+• Неограниченные диалоги  
+• Hermes Learn (навыки работы с ИИ)
+• GPT Mirror (анализ мышления)
+• Карта пути и инсайтов
+
+Цена: ₸3,090/месяц
+
+Для подключения напиши @username_admin`);
+});
+
+// 💬 MAIN MESSAGE PROCESSING
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userMessage = msg.text;
   
   if (!userMessage || userMessage.startsWith('/')) return;
   
-  const limits = checkUserLimits(chatId);
-  if (!limits.allowed) {
-    await bot.sendMessage(chatId, limits.message);
+  const access = checkUserAccess(chatId);
+  if (!access.allowed) {
+    await bot.sendMessage(chatId, access.message);
     return;
   }
   
   const session = getUserSession(chatId);
   const firstName = msg.from.first_name || 'друг';
   
-  console.log(`📨 ${firstName} (${session.messageCount + 1}/25): ${userMessage.slice(0, 50)}...`);
+  // Update day in journey
+  session.dayInJourney = access.day;
+  
+  console.log(`📨 ${firstName} (day ${access.day}, msg ${session.messageCount + 1}): ${userMessage.slice(0, 40)}...`);
   
   try {
     await bot.sendChatAction(chatId, 'typing');
     
-    // 1. Simple emotion detection
-    const detectedEmotion = EmotionDetector.detect(userMessage);
-    console.log(`🎭 Emotion: ${detectedEmotion}`);
+    // Determine scenario by user journey day
+    const scenario = UserJourney.getDayScenario(access.day);
+    const currentPrompt = UserJourney.getScenarioPrompt(scenario);
     
-    // 2. Enhanced system prompt with user context
-    const contextualPrompt = `${SYSTEM_PROMPT}
-
-КОНТЕКСТ ПОЛЬЗОВАТЕЛЯ:
-- Эмоциональное состояние: ${detectedEmotion}
-- Предыдущее состояние: ${session.lastEmotion || 'неизвестно'}
-- Сообщение в сессии: ${session.messageCount + 1}
-
-ИНСТРУКЦИЯ: Используй принципы Elixir. Будь честен, краток, ориентирован на действие.`;
-
-    // 3. GPT request with clean prompt
+    console.log(`🎯 Scenario: ${scenario} (day ${access.day})`);
+    
+    // Build context for GPT
+    const messages = [
+      { role: 'system', content: currentPrompt },
+      ...session.messages.slice(-4), // Last 2 exchanges
+      { role: 'user', content: userMessage }
+    ];
+    
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: contextualPrompt },
-        ...session.messages.slice(-6), // Last 3 exchanges
-        { role: 'user', content: userMessage }
-      ],
-      max_tokens: 150, // Force brevity
-      temperature: 0.6, // Less creativity, more directness
-      presence_penalty: 0.3 // Avoid repetition
+      messages: messages,
+      max_tokens: 200,
+      temperature: 0.7,
+      presence_penalty: 0.2
     });
     
     let reply = response.choices[0]?.message?.content?.trim();
     
     if (reply) {
-      // 4. Elixir truth check
-      const elixirCorrection = ElixirEngine.checkResponse(userMessage, reply);
-      reply += elixirCorrection;
+      // Add progress indicators for key days
+      if (access.day === 1) {
+        reply += '\n\n💡 Добро пожаловать в путь к ясности мышления.';
+      }
       
-      // Add subscription status if needed
-      if (limits.remaining <= 5) {
-        reply += `\n\nОсталось ${limits.remaining} сообщений.`;
+      if (access.day === 6) {
+        reply += '\n\n🎓 Сегодня начинается модуль Hermes Learn — учимся работать с ИИ эффективно.';
+      }
+      
+      if (access.day === 21) {
+        reply += '\n\n🪞 Время для GPT Mirror — посмотрим на твой стиль мышления.';
+      }
+      
+      // Add remaining messages for welcome users
+      if (session.subscription === 'welcome' && access.remaining <= 3) {
+        reply += `\n\n⏰ Осталось ${access.remaining} сообщений в Welcome.`;
       }
       
       await bot.sendMessage(chatId, reply);
       
-      // Save with emotion context
-      saveMessage(chatId, userMessage, reply, detectedEmotion);
+      // Save message with current module
+      saveMessage(chatId, userMessage, reply, scenario);
       
-      // Simple feedback loop - only at message 5
-      if (session.messageCount === 5) {
+      // Feedback triggers
+      if (session.messageCount === 3) {
         setTimeout(async () => {
-          await bot.sendMessage(chatId, 'Что изменилось после наших диалогов?');
+          await bot.sendMessage(chatId, 'Было ли полезно? Что изменилось?');
+        }, 2000);
+      }
+      
+      // Day 30 completion ritual
+      if (access.day === 30 && session.subscription === 'core') {
+        setTimeout(async () => {
+          const completionMessage = `🎊 РИТУАЛ ЗАВЕРШЕНИЯ
+
+Ты прошел 30-дневный путь с Hermes.
+
+Что изменилось в твоем мышлении? 
+
+Готов к карте твоих инсайтов?`;
+          await bot.sendMessage(chatId, completionMessage);
         }, 3000);
       }
       
-      console.log(`✅ Clean response sent to ${firstName} (${session.messageCount} total)`);
+      console.log(`✅ Response sent to ${firstName} (${scenario})`);
       
     } else {
-      await bot.sendMessage(chatId, 'Не могу сформулировать ответ. Переформулируй вопрос.');
+      await bot.sendMessage(chatId, 'Что-то пошло не так. Переформулируй вопрос?');
     }
     
   } catch (err) {
-    console.error(`🔥 Error ${BOT_VERSION}:`, err.message);
-    
-    // Simple fallback without emotional adaptation
-    await bot.sendMessage(chatId, 'Временная ошибка. Попробуй через минуту.');
+    console.error(`🔥 Error:`, err.message);
+    await bot.sendMessage(chatId, '⚠️ Проводник в тени. Через минуту я снова рядом.');
   }
 });
 
-// Graceful shutdown
+// Error handlers
 process.on('SIGTERM', () => {
   console.log(`♻️ Graceful shutdown ${BOT_VERSION}...`);
   bot.stopPolling();
@@ -329,12 +360,11 @@ process.on('SIGTERM', () => {
 });
 
 bot.on('polling_error', (error) => {
-  console.error(`🔥 Polling error ${BOT_VERSION}:`, error.message);
+  console.error(`🔥 Polling error:`, error.message);
 });
 
-console.log(`⚡ Clean Hermes ${BOT_VERSION} with Elixir principles loaded!`);
-console.log(`🔬 Active: Simplified Emotion Detection + Elixir Truth Engine`);
-console.log(`🎯 Focus: Radical Honesty + Action Orientation + Brevity`);
+console.log(`⚡ ${BOT_VERSION} loaded with User Journey System`);
+console.log(`🎯 Active modules: Welcome → Core → Learn → Mirror → Completion`);
 
 
 
