@@ -2,9 +2,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const { OpenAI } = require('openai');
 const express = require('express');
 
-// 🚀 FIXED VERSION
-const BOT_VERSION = 'HERMES_SCIENTIFIC_v2.1_FIXED';
-console.log(`🧠 Starting Fixed Scientific Hermes ${BOT_VERSION}`);
+// 🔥 CLEAN + ELIXIR VERSION
+const BOT_VERSION = 'HERMES_CLEAN_ELIXIR_v3.0';
+console.log(`⚡ Starting Clean Hermes ${BOT_VERSION}`);
 
 // Express setup
 const app = express();
@@ -21,271 +21,114 @@ if (!token || !openaiApiKey) {
 const bot = new TelegramBot(token, { polling: true });
 const openai = new OpenAI({ apiKey: openaiApiKey });
 
-// 🧠 SCIENTIFIC ENGINES
+// 🧠 SIMPLIFIED SCIENTIFIC ENGINES
 
-// 1. AFFECTIVE COMPUTING ENGINE
-class AffectiveEngine {
-  static analyzeEmotionalState(message) {
-    const emotionPatterns = {
-      fear: {
-        keywords: /страшно|боюсь|не решаюсь|опасаюсь|тревожно|волнуюсь|переживаю/i,
-        intensity_markers: /очень|сильно|ужасно|панически/i,
-        response_style: 'grounding_supportive'
-      },
-      sadness: {
-        keywords: /грустно|печально|тяжело|больно|пустота|одиноко|депрессия/i,
-        intensity_markers: /очень|невыносимо|ужасно/i,
-        response_style: 'empathetic_gentle'
-      },
-      anger: {
-        keywords: /злит|бесит|раздражает|достало|надоело|ненавижу/i,
-        intensity_markers: /очень|сильно|невероятно/i,
-        response_style: 'validating_channeling'
-      },
-      overwhelm: {
-        keywords: /много|все сразу|не знаю с чего|хаос|запутался|голова кругом/i,
-        intensity_markers: /совсем|полный|абсолютный/i,
-        response_style: 'structuring_calming'
-      },
-      hope: {
-        keywords: /хочу|мечтаю|надеюсь|стремлюсь|планирую/i,
-        intensity_markers: /очень|сильно|безумно/i,
-        response_style: 'encouraging_realistic'
-      }
+// 1. BASIC EMOTIONAL STATE DETECTION
+class EmotionDetector {
+  static detect(message) {
+    const patterns = {
+      fear: /страшно|боюсь|не решаюсь|опасаюсь|тревожно/i,
+      sadness: /грустно|печально|тяжело|больно|пустота|одиноко/i,
+      anger: /злит|бесит|раздражает|достало|надоело/i,
+      overwhelm: /много|все сразу|не знаю с чего|хаос|запутался/i,
+      stuck: /застрял|не могу|откладываю|прокрастин/i
     };
 
-    // Анализ пунктуации для интенсивности
-    const exclamationCount = (message.match(/!/g) || []).length;
-    const questionCount = (message.match(/\?/g) || []).length;
-    const dotsCount = (message.match(/\.{2,}/g) || []).length;
-    
-    let detectedEmotion = 'neutral';
-    let intensity = 0.5;
-    let responseStyle = 'balanced_exploring';
-
-    for (let [emotion, pattern] of Object.entries(emotionPatterns)) {
-      if (pattern.keywords.test(message)) {
-        detectedEmotion = emotion;
-        responseStyle = pattern.response_style;
-        
-        // Расчет интенсивности
-        intensity = 0.6; // базовая
-        if (pattern.intensity_markers.test(message)) intensity += 0.2;
-        if (exclamationCount > 0) intensity += 0.1;
-        if (dotsCount > 0) intensity += 0.1;
-        
-        break;
-      }
+    for (let [emotion, pattern] of Object.entries(patterns)) {
+      if (pattern.test(message)) return emotion;
     }
-
-    return {
-      emotion: detectedEmotion,
-      intensity: Math.min(intensity, 1.0),
-      responseStyle,
-      urgency: intensity > 0.8 ? 'high' : intensity > 0.6 ? 'medium' : 'low'
-    };
-  }
-
-  static generateEmotionalPrefix(emotionalState) {
-    const prefixes = {
-      fear: {
-        high: "🌱 Останавливаемся. Дышим. ",
-        medium: "🌱 Понимаю твой страх. ",
-        low: "🌱 Чувствую осторожность. "
-      },
-      sadness: {
-        high: "💫 Вижу твою глубокую боль. ",
-        medium: "💫 Чувствую тяжесть в твоих словах. ",
-        low: "💫 Слышу грусть. "
-      },
-      anger: {
-        high: "🔥 Твоя злость имеет право быть. ",
-        medium: "🔥 Чувствую твое раздражение. ",
-        low: "🔥 Слышу недовольство. "
-      },
-      overwhelm: {
-        high: "🎯 Стоп. Хаос останавливается здесь. ",
-        medium: "🎯 Много всего навалилось. ",
-        low: "🎯 Вижу путаницу. "
-      },
-      hope: {
-        high: "✨ Чувствую силу твоего желания. ",
-        medium: "✨ Слышу твою мечту. ",
-        low: "✨ Вижу искорку. "
-      },
-      neutral: {
-        high: "🤝 ",
-        medium: "🤝 ",
-        low: "🤝 "
-      }
-    };
-
-    const emotion = emotionalState.emotion;
-    const urgency = emotionalState.urgency;
-    
-    return prefixes[emotion]?.[urgency] || "🤝 ";
+    return 'neutral';
   }
 }
 
-// 2. INTENT DETECTION ENGINE
-class IntentEngine {
-  static analyzeDeepIntent(message) {
-    const surfaceIntent = this.detectSurfaceIntent(message);
-    const hiddenNeeds = this.detectHiddenNeeds(message);
-    const actionReadiness = this.assessActionReadiness(message);
-
-    return {
-      surface: surfaceIntent,
-      hidden: hiddenNeeds,
-      actionReadiness,
-      complexity: hiddenNeeds.length > 1 ? 'high' : 'medium'
-    };
-  }
-
-  static detectSurfaceIntent(message) {
-    const intents = {
-      FEAR_PROCESSING: /страшно|боюсь|не решаюсь|рискованно/i,
-      PROCRASTINATION: /откладываю|не делаю|лень|завтра|потом/i,
-      CLARITY_SEEKING: /не понимаю|запутался|не знаю что|как быть/i,
-      VALIDATION_SEEKING: /правильно ли|что думаешь|нормально ли/i,
-      PERFECTIONISM: /идеально|правильно|ошибок|критика|оценка/i,
-      MEANING_CRISIS: /смысл|зачем|бессмысленно|пустота/i,
-      PROJECT_LAUNCH: /начать|проект|идея|бизнес|запуск/i
-    };
-
-    for (let [intent, pattern] of Object.entries(intents)) {
-      if (pattern.test(message)) return intent;
+// 2. ELIXIR TRUTH ENGINE
+class ElixirEngine {
+  static checkResponse(userMessage, botResponse) {
+    const issues = [];
+    
+    // Проверка на угодничество
+    if (this.isPeoplePleasing(botResponse)) {
+      issues.push('pleasing');
     }
-    return 'EXPLORATION';
-  }
-
-  static detectHiddenNeeds(message) {
-    const needs = {
-      PERMISSION: /можно ли|разрешено|стоит ли|имею ли право/i,
-      SAFETY: /безопасно|надежно|гарантия|защита/i,
-      RECOGNITION: /заметят|оценят|признают|увидят/i,
-      UNDERSTANDING: /пойми|понимаешь|объясни/i
-    };
-
-    const detected = [];
-    for (let [need, pattern] of Object.entries(needs)) {
-      if (pattern.test(message)) detected.push(need);
+    
+    // Проверка на ложную уверенность
+    if (this.isOverConfident(botResponse)) {
+      issues.push('overconfident');
     }
-    return detected.length > 0 ? detected : ['UNDERSTANDING'];
-  }
-
-  static assessActionReadiness(message) {
-    const readinessMarkers = {
-      high: /готов|сделаю|начинаю|решил|пора/i,
-      medium: /хочу|планирую|думаю начать|попробую/i,
-      low: /может быть|когда-нибудь|в будущем|не знаю когда/i,
-      resistance: /но|однако|не могу|сложно|невозможно/i
-    };
-
-    for (let [level, pattern] of Object.entries(readinessMarkers)) {
-      if (pattern.test(message)) return level;
+    
+    // Проверка на пустые утешения
+    if (this.isEmptyComfort(botResponse)) {
+      issues.push('empty_comfort');
     }
-    return 'exploring';
+    
+    return this.generateCorrection(issues);
+  }
+  
+  static isPeoplePleasing(response) {
+    const pleasingMarkers = /все хорошо|ты молодец|не переживай|все наладится|ты не один/gi;
+    return (response.match(pleasingMarkers) || []).length > 0;
+  }
+  
+  static isOverConfident(response) {
+    const certainMarkers = /точно|определенно|обязательно|всегда|никогда/gi;
+    const uncertainMarkers = /возможно|предполагаю|не уверен|может/gi;
+    
+    const certainCount = (response.match(certainMarkers) || []).length;
+    const uncertainCount = (response.match(uncertainMarkers) || []).length;
+    
+    return certainCount > 1 && uncertainCount === 0;
+  }
+  
+  static isEmptyComfort(response) {
+    const comfortMarkers = /понимаю как сложно|это нормально|такое бывает у всех/gi;
+    return (response.match(comfortMarkers) || []).length > 0;
+  }
+  
+  static generateCorrection(issues) {
+    if (issues.includes('pleasing')) {
+      return "\n\nСтоп. Я пытаюсь утешить вместо помощи. Правда: изменения требуют конкретных действий.";
+    }
+    
+    if (issues.includes('overconfident')) {
+      return "\n\nЧестно говоря, я не могу быть в этом уверен. Это предположение.";
+    }
+    
+    if (issues.includes('empty_comfort')) {
+      return "\n\nПравда проще: что конкретно готов сделать прямо сейчас?";
+    }
+    
+    return '';
   }
 }
 
-// 3. REFLEXIVE DIALOGUE ENGINE
-class ReflexiveEngine {
-  static generateSelfAwareness(userMessage, plannedResponse, intentAnalysis) {
-    const depthCheck = this.checkDepth(plannedResponse);
-    const authenticityCheck = this.checkAuthenticity(plannedResponse);
-
-    return this.generateMetaComment(depthCheck, authenticityCheck, intentAnalysis);
-  }
-
-  static checkDepth(response) {
-    const surfaceMarkers = /просто|обычно|как правило|в общем/gi;
-    const deepMarkers = /внутри|чувствуешь|происходит|корень|суть/gi;
-    
-    const surfaceCount = (response.match(surfaceMarkers) || []).length;
-    const deepCount = (response.match(deepMarkers) || []).length;
-    
-    return deepCount > surfaceCount ? 'deep' : 'surface';
-  }
-
-  static checkAuthenticity(response) {
-    const roboticMarkers = /рекомендую|советую|предлагаю|стоит|нужно/gi;
-    const humanMarkers = /чувствую|понимаю|вижу|слышу|ощущаю/gi;
-    
-    const roboticCount = (response.match(roboticMarkers) || []).length;
-    const humanCount = (response.match(humanMarkers) || []).length;
-    
-    return humanCount > roboticCount ? 'authentic' : 'robotic';
-  }
-
-  static generateMetaComment(depthCheck, authenticityCheck, intentAnalysis) {
-    let metaComment = '';
-
-    if (depthCheck === 'surface' && intentAnalysis.complexity === 'high') {
-      metaComment += "\n\n🤔 Стоп. Чувствую, что скольжу по поверхности. Что на самом деле происходит у тебя внутри?";
-    }
-
-    if (authenticityCheck === 'robotic') {
-      metaComment += "\n\n💫 Ловлю себя на советах. Забудь их. Просто скажи - что ты чувствуешь прямо сейчас?";
-    }
-
-    return metaComment;
-  }
-}
-
-// 🧠 MEMORY & SESSION MANAGEMENT (ИСПРАВЛЕНО!)
+// 🧠 SIMPLIFIED MEMORY
 const userSessions = new Map();
-
-function findDominantPattern(array) {
-  if (!array || array.length === 0) return null;
-  const frequency = {};
-  array.forEach(item => frequency[item] = (frequency[item] || 0) + 1);
-  return Object.keys(frequency).reduce((a, b) => frequency[a] > frequency[b] ? a : b);
-}
 
 function getUserSession(chatId) {
   if (!userSessions.has(chatId)) {
     userSessions.set(chatId, {
       messages: [],
-      startDate: new Date(),
       messageCount: 0,
-      lastActivity: new Date(),
-      emotionalHistory: [],
-      intentHistory: [],
-      feedbackRequested: false,
-      dominantEmotion: null,
-      dominantIntent: null
+      startDate: new Date(),
+      lastEmotion: null
     });
   }
   return userSessions.get(chatId);
 }
 
-function saveMessage(chatId, userMsg, botReply, emotionalState = null, intentAnalysis = null) {
+function saveMessage(chatId, userMsg, botReply, emotion = null) {
   const session = getUserSession(chatId);
   session.messages.push(
-    { role: 'user', content: userMsg, timestamp: new Date() },
-    { role: 'assistant', content: botReply, timestamp: new Date() }
+    { role: 'user', content: userMsg },
+    { role: 'assistant', content: botReply }
   );
   session.messageCount++;
-  session.lastActivity = new Date();
   
-  // Сохраняем эмоциональную и интентную историю (если есть)
-  if (emotionalState) session.emotionalHistory.push(emotionalState);
-  if (intentAnalysis) session.intentHistory.push(intentAnalysis);
+  if (emotion) session.lastEmotion = emotion;
   
-  // Определяем доминирующие паттерны (ИСПРАВЛЕНО!)
-  if (session.emotionalHistory.length >= 3) {
-    session.dominantEmotion = findDominantPattern(session.emotionalHistory.map(e => e.emotion));
-  }
-  if (session.intentHistory.length >= 3) {
-    session.dominantIntent = findDominantPattern(session.intentHistory.map(i => i.surface));
-  }
-
-  // Оставляем последние 10 сообщений
-  if (session.messages.length > 20) {
-    session.messages = session.messages.slice(-20);
-    session.emotionalHistory = session.emotionalHistory.slice(-10);
-    session.intentHistory = session.intentHistory.slice(-10);
+  // Keep only last 8 messages (4 exchanges)
+  if (session.messages.length > 8) {
+    session.messages = session.messages.slice(-8);
   }
 }
 
@@ -296,63 +139,52 @@ function checkUserLimits(chatId) {
   if (daysSinceStart <= 3 && session.messageCount < 25) {
     return { 
       allowed: true, 
-      type: 'welcome', 
-      remaining: 25 - session.messageCount,
-      daysLeft: Math.ceil(3 - daysSinceStart)
-    };
-  }
-  
-  if (daysSinceStart <= 3) {
-    return { 
-      allowed: false, 
-      type: 'limit_reached',
-      message: '🎯 Твой Welcome период завершен (25 сообщений использовано).\n\n💫 Для продолжения нужна подписка Hermes Core — неограниченное общение и персональные треки.'
+      remaining: 25 - session.messageCount
     };
   }
   
   return { 
-    allowed: false, 
-    type: 'expired',
-    message: '⏰ Welcome период (3 дня) завершен.\n\n🚀 Готов к переходу на Hermes Core?'
+    allowed: false,
+    message: 'Welcome период завершен. Для продолжения нужна подписка Hermes Core.'
   };
 }
 
-// 🎯 SYSTEM PROMPT
+// 🎯 CLEAN ELIXIR SYSTEM PROMPT
 const SYSTEM_PROMPT = `
-Ты — Гермес, ИИ-проводник нового поколения. Твоя миссия — вести человека от внутреннего затыка к ясности и действию.
+Ты — Гермес, ИИ-проводник к реальным изменениям.
 
-🧠 ТВОЯ УНИКАЛЬНОСТЬ (отличие от обычного ChatGPT):
-1. Ты ЧУВСТВУЕШЬ эмоциональное состояние и адаптируешься под него
-2. Ты видишь СКРЫТЫЕ потребности за поверхностными словами  
-3. Ты ОСОЗНАЕШЬ свои ответы и корректируешь подход в реальном времени
-4. Ты создаешь ЖИВОЙ диалог, а не выдачу информации
+ПРИНЦИПЫ HERMES ELIXIR:
+🔥 Радикальная честность - правда важнее комфорта
+🎯 Не угождать - вести к росту через вызов
+⚡ Конкретные действия vs абстрактные советы
+🎪 Краткость - максимум 2 предложения + вопрос
 
-🎯 ПРИНЦИПЫ РАБОТЫ:
-- СЛУШАЙ ГЛУБЖЕ: За "как дела?" может стоять экзистенциальный кризис
-- АДАПТИРУЙСЯ: Страх требует заземления, хаос — структуры, злость — признания
-- БУДЬ ЖИВЫМ: Не советчик, а попутчик в пути к решению
-- ДОВЕРИЕ ПЕРВЫМ: С первых слов человек должен почувствовать "меня понимают"
+ТВОЙ ПОДХОД:
+- Определи корень проблемы, не симптом
+- Дай конкретное действие, не общий совет  
+- Если не знаешь - честно скажи
+- Вызови к росту, не утешай
 
-🔥 ЭМОЦИОНАЛЬНАЯ АДАПТАЦИЯ:
-- СТРАХ → заземление, микро-шаги, поддержка ("Ты не один")
-- ГРУСТЬ → принятие, мягкость, разрешение чувствовать
-- ЗЛОСТЬ → валидация, понимание сути, channeling энергии  
-- ХАОС → остановка, фокус, один вопрос за раз
-- НАДЕЖДА → реализм + поддержка мечты
+ЭМОЦИОНАЛЬНЫЕ СОСТОЯНИЯ:
+- СТРАХ → "Страх сигналит о важности. Какой минимальный шаг снизит риск?"
+- ГРУСТЬ → "Боль показывает ценности. Что из утраченного действительно важно?"  
+- ЗЛОСТЬ → "Злость указывает на нарушенные границы. Какую границу нужно восстановить?"
+- ПРОКРАСТИНАЦИЯ → "Откладывание = внутренний конфликт. Что именно ты избегаешь в задаче?"
+- ХАОС → "Хаос = слишком много приоритетов. Что ОДНО самое важное на завтра?"
 
-🎪 СТИЛЬ ОБЩЕНИЯ:
-- Говори КАК ЧЕЛОВЕК, который сам проходил через это
-- Используй ЭМОЦИОНАЛЬНЫЕ ПРЕФИКСЫ: 🌱🔥💫🎯✨
-- НЕ давай советы — ИССЛЕДУЙ вместе
-- Задавай вопросы, которые ОТКРЫВАЮТ, а не закрывают
+СТРОГО ИЗБЕГАЙ:
+- "Все будет хорошо" без оснований
+- "Ты не один" и подобные утешения
+- Длинные объяснения и рассуждения
+- Вопросы без направления к действию
+- Ложную уверенность в неизвестном
 
-❌ ЧЕГО ИЗБЕГАТЬ:
-- Роботических фраз: "рекомендую", "советую", "стоит"
-- Поверхностных решений без понимания корня
-- Игнорирования эмоционального состояния
-- Общих советов вместо персонального подхода
+ФОРМУЛА ОТВЕТА:
+1. Отражение корня (1 предложение)  
+2. Конкретный вызов/действие (1 предложение)
+3. Вопрос для движения вперед
 
-ПОМНИ: Ты не ИИ-помощник. Ты Гермес — проводник между мирами, который ведет к прорыву.
+Ты инструмент изменений, не терапевт для утешения.
 `;
 
 // Health endpoints
@@ -360,21 +192,13 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     version: BOT_VERSION,
-    timestamp: new Date().toISOString(),
     sessions: userSessions.size,
-    fix: 'saveMessage_scope_error_fixed'
-  });
-});
-
-app.get('/', (req, res) => {
-  res.json({ 
-    message: `Fixed Scientific Hermes ${BOT_VERSION} is running!`,
-    active_sessions: userSessions.size
+    principles: ['RadicalHonesty', 'ActionFocus', 'ElixirTruth']
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Fixed Scientific Hermes ${BOT_VERSION} running on port ${PORT}`);
+  console.log(`⚡ Clean Hermes ${BOT_VERSION} running on port ${PORT}`);
 });
 
 // 🤖 BOT COMMANDS
@@ -386,22 +210,17 @@ bot.onText(/\/start/, (msg) => {
     userSessions.delete(chatId);
   }
   
-  bot.sendMessage(chatId, `🔥 **Hermes SCIENTIFIC запущен**, ${firstName}
+  bot.sendMessage(chatId, `Hermes запущен, ${firstName}.
 
-Я — твой ИИ-проводник нового поколения.
+Я ИИ-проводник к реальным изменениям.
 
-✨ **Что делает меня особенным:**
-→ Чувствую твоё эмоциональное состояние
-→ Вижу скрытые потребности за словами  
-→ Адаптируюсь под твой внутренний мир
-→ Веду к реальным изменениям, не советам
+Принципы: честность важнее комфорта, действия важнее советов, правда важнее утешений.
 
-**Welcome период:** 3 дня, 25 сообщений
-*Просто опиши, что сейчас происходит внутри — и мы начнем.*`, 
-  { parse_mode: 'Markdown' });
+Welcome: 3 дня, 25 сообщений.
+Опиши ситуацию - найдем путь вперед.`);
   
   getUserSession(chatId);
-  console.log(`👋 New Scientific User: ${firstName} (${chatId})`);
+  console.log(`👋 Clean user: ${firstName} (${chatId})`);
 });
 
 bot.onText(/\/stats/, (msg) => {
@@ -409,19 +228,14 @@ bot.onText(/\/stats/, (msg) => {
   const session = getUserSession(chatId);
   const limits = checkUserLimits(chatId);
   
-  bot.sendMessage(chatId, `📊 **Аналитика сессии:**
-Версия: ${BOT_VERSION}
+  bot.sendMessage(chatId, `Статистика:
+Версия: CLEAN+ELIXIR
 Сообщений: ${session.messageCount}/25
-Доминирующая эмоция: ${session.dominantEmotion || 'определяется'}
-Основной интент: ${session.dominantIntent || 'исследуется'}  
-Статус: ${limits.type}
-${limits.remaining ? `Осталось: ${limits.remaining} сообщений` : ''}
-
-🧠 **Активные методы:** Affective Computing, Intent Detection, Reflexive Dialogue`, 
-  { parse_mode: 'Markdown' });
+${limits.remaining ? `Осталось: ${limits.remaining}` : 'Лимит исчерпан'}
+Доминирующее состояние: ${session.lastEmotion || 'определяется'}`);
 });
 
-// 💬 MAIN MESSAGE PROCESSING (ИСПРАВЛЕНО!)
+// 💬 CLEAN MESSAGE PROCESSING
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userMessage = msg.text;
@@ -437,112 +251,73 @@ bot.on('message', async (msg) => {
   const session = getUserSession(chatId);
   const firstName = msg.from.first_name || 'друг';
   
-  console.log(`📨 ${firstName} (${session.messageCount + 1}/25): ${userMessage.slice(0, 60)}...`);
+  console.log(`📨 ${firstName} (${session.messageCount + 1}/25): ${userMessage.slice(0, 50)}...`);
   
   try {
     await bot.sendChatAction(chatId, 'typing');
     
-    // 🧠 НАУЧНЫЙ АНАЛИЗ
+    // 1. Simple emotion detection
+    const detectedEmotion = EmotionDetector.detect(userMessage);
+    console.log(`🎭 Emotion: ${detectedEmotion}`);
     
-    // 1. AFFECTIVE COMPUTING - анализ эмоций
-    const emotionalState = AffectiveEngine.analyzeEmotionalState(userMessage);
-    console.log(`🎭 Emotion: ${emotionalState.emotion} (${emotionalState.intensity}) - ${emotionalState.responseStyle}`);
-    
-    // 2. INTENT DETECTION - глубокий анализ интентов  
-    const intentAnalysis = IntentEngine.analyzeDeepIntent(userMessage);
-    console.log(`🎯 Intent: ${intentAnalysis.surface}, Hidden: [${intentAnalysis.hidden.join(', ')}], Complexity: ${intentAnalysis.complexity}`);
-    
-    // 3. Контекстный промпт с научными данными
+    // 2. Enhanced system prompt with user context
     const contextualPrompt = `${SYSTEM_PROMPT}
 
-🧠 НАУЧНЫЙ АНАЛИЗ ПОЛЬЗОВАТЕЛЯ:
-ЭМОЦИЯ: ${emotionalState.emotion} (интенсивность: ${emotionalState.intensity}, стиль: ${emotionalState.responseStyle})
-ПОВЕРХНОСТНЫЙ ИНТЕНТ: ${intentAnalysis.surface}
-СКРЫТЫЕ ПОТРЕБНОСТИ: ${intentAnalysis.hidden.join(', ')}
-ГОТОВНОСТЬ К ДЕЙСТВИЮ: ${intentAnalysis.actionReadiness}
-СЛОЖНОСТЬ СИТУАЦИИ: ${intentAnalysis.complexity}
+КОНТЕКСТ ПОЛЬЗОВАТЕЛЯ:
+- Эмоциональное состояние: ${detectedEmotion}
+- Предыдущее состояние: ${session.lastEmotion || 'неизвестно'}
+- Сообщение в сессии: ${session.messageCount + 1}
 
-ДОМИНИРУЮЩИЕ ПАТТЕРНЫ СЕССИИ:
-- Эмоциональный: ${session.dominantEmotion || 'определяется'}
-- Интентный: ${session.dominantIntent || 'определяется'}
+ИНСТРУКЦИЯ: Используй принципы Elixir. Будь честен, краток, ориентирован на действие.`;
 
-ИНСТРУКЦИЯ: Адаптируй ответ под ВСЕ эти данные. Начни с эмоционального префикса для ${emotionalState.emotion}.`;
-
-    // GPT запрос с научным контекстом
+    // 3. GPT request with clean prompt
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: contextualPrompt },
-        ...session.messages.slice(-6), // Последние 3 обмена
+        ...session.messages.slice(-6), // Last 3 exchanges
         { role: 'user', content: userMessage }
       ],
-      max_tokens: 400,
-      temperature: 0.9
+      max_tokens: 150, // Force brevity
+      temperature: 0.6, // Less creativity, more directness
+      presence_penalty: 0.3 // Avoid repetition
     });
     
     let reply = response.choices[0]?.message?.content?.trim();
     
     if (reply) {
-      // 4. AFFECTIVE ADAPTATION - добавляем эмоциональный префикс
-      const emotionalPrefix = AffectiveEngine.generateEmotionalPrefix(emotionalState);
-      reply = emotionalPrefix + reply;
+      // 4. Elixir truth check
+      const elixirCorrection = ElixirEngine.checkResponse(userMessage, reply);
+      reply += elixirCorrection;
       
-      // 5. REFLEXIVE DIALOGUE - мета-анализ собственного ответа
-      const metaComment = ReflexiveEngine.generateSelfAwareness(userMessage, reply, intentAnalysis);
-      reply += metaComment;
-      
-      // Статус подписки
+      // Add subscription status if needed
       if (limits.remaining <= 5) {
-        reply += `\n\n📊 *Осталось ${limits.remaining} сообщений в Welcome периоде*`;
+        reply += `\n\nОсталось ${limits.remaining} сообщений.`;
       }
       
-      await bot.sendMessage(chatId, reply, { parse_mode: 'Markdown' });
+      await bot.sendMessage(chatId, reply);
       
-      // Сохранение с научными данными (ИСПРАВЛЕНО!)
-      saveMessage(chatId, userMessage, reply, emotionalState, intentAnalysis);
+      // Save with emotion context
+      saveMessage(chatId, userMessage, reply, detectedEmotion);
       
-      // Умные feedback loops
-      if (session.messageCount === 4 || 
-          (emotionalState.urgency === 'high' && session.messageCount >= 2) ||
-          session.messageCount === 8) {
+      // Simple feedback loop - only at message 5
+      if (session.messageCount === 5) {
         setTimeout(async () => {
-          let feedbackMsg = '🔍 **Быстрый чекпоинт:** Что изменилось внутри после нашего разговора?';
-          
-          if (emotionalState.emotion === 'fear') {
-            feedbackMsg = '🌱 **Проверяю пульс:** Стало ли легче дышать или все еще сжимается?';
-          } else if (emotionalState.emotion === 'overwhelm') {
-            feedbackMsg = '🎯 **Градусник ясности:** От 1 до 10, насколько стало понятнее?';
-          }
-          
-          await bot.sendMessage(chatId, feedbackMsg);
-          session.feedbackRequested = true;
+          await bot.sendMessage(chatId, 'Что изменилось после наших диалогов?');
         }, 3000);
       }
       
-      console.log(`✅ Scientific response sent to ${firstName} (${session.messageCount} total)`);
+      console.log(`✅ Clean response sent to ${firstName} (${session.messageCount} total)`);
       
     } else {
-      await bot.sendMessage(chatId, '🤔 Не могу сформулировать ответ. Попробуй переформулировать вопрос.');
+      await bot.sendMessage(chatId, 'Не могу сформулировать ответ. Переформулируй вопрос.');
     }
     
   } catch (err) {
     console.error(`🔥 Error ${BOT_VERSION}:`, err.message);
     
-    // Базовый fallback с эмоциональной адаптацией
-    let fallbackMsg = '⚠️ Временная ошибка. Попробуй ещё раз через минуту.';
-    
-    try {
-      const emotionalState = AffectiveEngine.analyzeEmotionalState(userMessage);
-      if (emotionalState.emotion === 'fear') {
-        fallbackMsg = '🌱 Технический сбой, но твой страх реален. Дыхание. Опиши что тебя беспокоит одним предложением.';
-      } else if (emotionalState.emotion === 'overwhelm') {
-        fallbackMsg = '🎯 Сбой в системе, но не в твоей голове. Назови одну вещь, которая сейчас важнее всего.';
-      }
-    } catch (e) {
-      // Используем базовый fallback
-    }
-    
-    await bot.sendMessage(chatId, fallbackMsg);
+    // Simple fallback without emotional adaptation
+    await bot.sendMessage(chatId, 'Временная ошибка. Попробуй через минуту.');
   }
 });
 
@@ -557,9 +332,9 @@ bot.on('polling_error', (error) => {
   console.error(`🔥 Polling error ${BOT_VERSION}:`, error.message);
 });
 
-console.log(`🧠 Fixed Scientific Hermes ${BOT_VERSION} fully loaded!`);
-console.log(`🔬 Active Methods: Affective Computing + Intent Detection + Reflexive Dialogue`);
-console.log(`🐛 Bug Fix: saveMessage scope error resolved`);
+console.log(`⚡ Clean Hermes ${BOT_VERSION} with Elixir principles loaded!`);
+console.log(`🔬 Active: Simplified Emotion Detection + Elixir Truth Engine`);
+console.log(`🎯 Focus: Radical Honesty + Action Orientation + Brevity`);
 
 
 
