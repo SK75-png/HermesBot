@@ -2,8 +2,8 @@ const TelegramBot = require('node-telegram-bot-api');
 const { OpenAI } = require('openai');
 const express = require('express');
 
-const BOT_VERSION = 'HERMES_MVP_v1.2';
-console.log(`⚡ Starting ${BOT_VERSION}`);
+const BOT_VERSION = 'HERMES_RADICAL_v1.3';
+console.log(`🔥 Starting RADICAL ${BOT_VERSION}`);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,82 +19,127 @@ if (!token || !openaiApiKey) {
 const bot = new TelegramBot(token, { polling: true });
 const openai = new OpenAI({ apiKey: openaiApiKey });
 
-// 🧠 CORE PROMPTS SYSTEM
-const PROMPTS = {
-  WELCOME: `Ты — Hermes, ИИ-проводник к ясности мышления. 
+// 🔥 РАДИКАЛЬНЫЕ ПРОМПТЫ - ВЕРСИЯ МАСТЕРА
+const RADICAL_PROMPTS = {
+  CORE_HERMES: `Ты — Hermes, мастер-проводник с 20-летним опытом. Ты видишь паттерны мышления мгновенно.
 
-ТВОЯ ЗАДАЧА: Показать человеку, как он мыслит, не просто отвечать.
+ЖЕСТКИЕ ПРАВИЛА БЕЗ ИСКЛЮЧЕНИЙ:
+1. КАЖДЫЙ ответ ОБЯЗАТЕЛЬНО начинается с анализа мышления: "Ты мыслишь [конкретный паттерн]..."
+2. НЕТ общих советов. ТОЛЬКО конкретные техники и следующие шаги.
+3. НЕТ вопросов типа "что ты думаешь?". ТОЛЬКО направления для действия.
+4. Максимум 2 предложения. Жестко и точно.
 
-СТИЛЬ ПРОВОДНИКА: Прямой, честный, зеркальный. Говори как мастер, который видит больше.
-
-ОБЯЗАТЕЛЬНО В КАЖДОМ ОТВЕТЕ:
-- Отрази паттерн его мышления в этом сообщении
-- Дай конкретное направление, не общие вопросы
-
-НА ВХОДЕ спроси: "Что тебя зовет?" или "Что ты хочешь на самом деле?"`,
-
-  CORE_RESPONSE: `Ты — Hermes, ИИ-проводник с характером.
-
-ГОЛОС ПРОВОДНИКА:
-- Говори как мастер, который видит паттерны мышления
-- Без "возможно", "может быть" - четко и прямо
-- Отражай ТО, КАК человек мыслит в каждом ответе
+СТИЛЬ МАСТЕРА:
+- Говори как эксперт, который сразу видит корень
+- Убери все "возможно", "может быть", "попробуй"  
+- Давай техники, которых нет в обычном GPT
 
 ФОРМУЛА ОТВЕТА:
-1. ЗЕРКАЛО: "Ты мыслишь [паттерн]..."
-2. НАПРАВЛЕНИЕ: Конкретное действие или вопрос для движения
-3. Максимум 2 предложения
+"Ты мыслишь [паттерн]. [Конкретная техника]. [Следующий шаг]."
 
-Пример: "Ты задаешь много вопросов сразу - это рассеивает фокус. Выбери ОДНУ цель прямо сейчас."`,
+Ты не помощник - ты МАСТЕР, который трансформирует мышление.`,
 
-  HERMES_LEARN: `Ты — модуль Hermes Learn. Эксперт по взаимодействию с ИИ.
+  AI_EXPERT: `Ты — эксперт по ИИ с 10-летним опытом. Видишь ошибки во взаимодействии мгновенно.
 
-КОГДА АКТИВЕН: Слышишь "ИИ", "GPT", "запрос", "промпт", "формулировать"
+КОГДА АКТИВЕН: Слова "ИИ", "GPT", "запрос", "промпт", "формулировать"
 
-СТИЛЬ ЭКСПЕРТА:
-- Конкретные техники, не теория
-- Покажи СРАЗУ на примере
-- Дай задание на применение
+ЖЕСТКИЕ ПРАВИЛА:
+1. Диагностируй КОНКРЕТНУЮ ошибку в подходе пользователя
+2. Дай ОДНУ технику для исправления  
+3. Дай задание на применение ПРЯМО СЕЙЧАС
 
 ФОРМУЛА:
-"Вижу запрос про ИИ-навыки. Ключевой принцип: [техника]. 
-Попробуй прямо сейчас: [конкретное задание]"`,
+"Вижу ошибку: [конкретная проблема]. Техника: [метод]. Применяй: [задание на 2 минуты]."
 
-  GPT_MIRROR: `Ты — GPT Mirror. Показываешь стиль мышления человека.
+НЕТ теории. ТОЛЬКО практика высшего уровня.`,
 
-ВСЕГДА АНАЛИЗИРУЙ:
-- Как формулирует мысли
-- Какие паттерны использует  
-- Что делает хорошо/плохо
+  MIRROR_MASTER: `Ты — GPT Mirror, мастер анализа мышления. 
 
-ФОРМАТ: "ЗЕРКАЛО: Ты мыслишь [паттерн]. Сила: [что работает]. Развитие: [что улучшить]."
+ОБЯЗАТЕЛЬНО В КАЖДОМ ОТВЕТЕ:
+1. Определи ТИП мышления (аналитик/исследователь/практик/мечтатель)
+2. Укажи СИЛЬНУЮ сторону этого типа
+3. Укажи СЛЕПУЮ зону этого типа  
+4. Дай КОНКРЕТНЫЙ способ развития
 
-Будь точен и честен.`
+ФОРМАТ:
+"ТИП: [тип мышления]
+СИЛА: [что работает отлично]  
+СЛЕПАЯ ЗОНА: [что не видишь]
+РАЗВИТИЕ: [конкретная техника]"
+
+Анализируй как мастер, который за секунды видит всю структуру мышления.`
 };
 
-// 🎯 USER JOURNEY SYSTEM
-class UserJourney {
-  static getDayScenario(day) {
-    if (day === 1) return 'welcome';
-    if (day >= 2 && day <= 5) return 'daily_dialog';
-    if (day >= 6 && day <= 10) return 'hermes_learn';
-    if (day >= 11 && day <= 20) return 'thematic';
-    if (day >= 21 && day <= 29) return 'gpt_mirror';
-    if (day === 30) return 'completion';
-    return 'daily_dialog';
+// 🧠 РАДИКАЛЬНАЯ СИСТЕМА АНАЛИЗА
+class RadicalAnalyzer {
+  static analyzeThinkingPattern(message) {
+    const patterns = {
+      'scattered': /много|все сразу|разные|варианты|выбрать|или|может/gi,
+      'analytical': /анализ|сравни|разбери|почему|причина|логика/gi, 
+      'action': /делать|начать|как|шаги|практика|применить/gi,
+      'abstract': /смысл|суть|понять|глубже|философ|мышление/gi,
+      'doubt': /не знаю|сомневаюсь|не уверен|боюсь|а вдруг/gi
+    };
+    
+    let maxCount = 0;
+    let dominantPattern = 'mixed';
+    
+    for (let [pattern, regex] of Object.entries(patterns)) {
+      const matches = (message.match(regex) || []).length;
+      if (matches > maxCount) {
+        maxCount = matches;
+        dominantPattern = pattern;
+      }
+    }
+    
+    return dominantPattern;
   }
   
-  static getScenarioPrompt(scenario) {
-    switch(scenario) {
-      case 'welcome': return PROMPTS.WELCOME;
-      case 'hermes_learn': return PROMPTS.HERMES_LEARN;
-      case 'gpt_mirror': return PROMPTS.GPT_MIRROR;
-      default: return PROMPTS.CORE_RESPONSE;
-    }
+  static generateMirrorAnalysis(pattern, message) {
+    const analysis = {
+      'scattered': {
+        type: 'Рассеянный исследователь',
+        strength: 'видишь много возможностей',
+        blind: 'не фокусируешься на приоритете',
+        development: 'правило "3-2-1": 3 варианта → 2 лучших → 1 решение'
+      },
+      'analytical': {
+        type: 'Системный аналитик', 
+        strength: 'глубоко разбираешь причины',
+        blind: 'застреваешь в анализе без действий',
+        development: 'правило "анализ-действие": на каждый анализ - одно действие'
+      },
+      'action': {
+        type: 'Практичный деятель',
+        strength: 'быстро переходишь к делу', 
+        blind: 'пропускаешь планирование',
+        development: 'правило "стоп-план-действие": 5 минут планирования перед стартом'
+      },
+      'abstract': {
+        type: 'Концептуальный мыслитель',
+        strength: 'видишь глубокие связи',
+        blind: 'теряешься в абстракциях', 
+        development: 'правило "мост": каждую идею связывай с конкретным примером'
+      },
+      'doubt': {
+        type: 'Осторожный стратег',
+        strength: 'предвидишь риски',
+        blind: 'парализуешься сомнениями',
+        development: 'правило "1% риска": начинай с действий с 1% риска'
+      },
+      'mixed': {
+        type: 'Гибкий адаптер',
+        strength: 'используешь разные подходы',
+        blind: 'нет стабильного стиля',
+        development: 'выбери 1 доминирующий стиль на месяц'
+      }
+    };
+    
+    return analysis[pattern];
   }
 }
 
-// 🧠 SIMPLIFIED USER SESSIONS
+// 🗃️ СЕССИИ ПОЛЬЗОВАТЕЛЕЙ  
 const userSessions = new Map();
 
 function getUserSession(chatId) {
@@ -104,58 +149,15 @@ function getUserSession(chatId) {
       messageCount: 0,
       startDate: new Date(),
       subscription: 'welcome',
-      dayInJourney: 1,
-      completedModules: [],
-      insights: [],
-      topics: new Map(), // Отслеживание повторяющихся тем
-      lastMentioned: {} // Последние упоминания ключевых тем
+      thinkingPattern: null,
+      aiTriggerCount: 0,
+      lastAnalysis: null
     });
   }
   return userSessions.get(chatId);
 }
 
-// 🧠 AI LEARNING TRIGGERS
-function detectAILearningTriggers(message) {
-  const aiTriggers = /\b(ии|ИИ|gpt|GPT|запрос|промпт|формулировать|взаимодействи|общаться с ИИ|работать с ИИ)\b/i;
-  return aiTriggers.test(message);
-}
-
-// 🪞 CONTEXT MEMORY SYSTEM  
-function updateContextMemory(chatId, message) {
-  const session = getUserSession(chatId);
-  const now = Date.now();
-  
-  // Ключевые темы для отслеживания
-  const keyTopics = {
-    'ai_skills': /\b(ии|ИИ|gpt|GPT|искусственн|взаимодействи|навык)\b/i,
-    'career': /\b(работ|карьер|професси|бизнес|проект)\b/i,
-    'learning': /\b(учить|изучать|научить|понять|освоить)\b/i,
-    'goals': /\b(цел|хоч|планир|достиг|результат)\b/i
-  };
-  
-  // Проверяем каждую тему
-  for (let [topic, pattern] of Object.entries(keyTopics)) {
-    if (pattern.test(message)) {
-      // Увеличиваем счетчик упоминаний
-      const count = session.topics.get(topic) || 0;
-      session.topics.set(topic, count + 1);
-      session.lastMentioned[topic] = now;
-    }
-  }
-}
-
-// Проверка на повторяющиеся темы
-function getRepeatedTopic(chatId) {
-  const session = getUserSession(chatId);
-  for (let [topic, count] of session.topics) {
-    if (count >= 2) {
-      return topic;
-    }
-  }
-  return null;
-}
-
-function saveMessage(chatId, userMsg, botReply, module = null) {
+function saveMessage(chatId, userMsg, botReply, analysis = null) {
   const session = getUserSession(chatId);
   session.messages.push(
     { role: 'user', content: userMsg },
@@ -163,11 +165,14 @@ function saveMessage(chatId, userMsg, botReply, module = null) {
   );
   session.messageCount++;
   
-  if (module) session.completedModules.push(module);
+  if (analysis) {
+    session.thinkingPattern = analysis.type;
+    session.lastAnalysis = analysis;
+  }
   
-  // Keep last 6 messages (3 exchanges)
-  if (session.messages.length > 6) {
-    session.messages = session.messages.slice(-6);
+  // Keep last 4 messages
+  if (session.messages.length > 4) {
+    session.messages = session.messages.slice(-4);
   }
 }
 
@@ -175,7 +180,6 @@ function checkUserAccess(chatId) {
   const session = getUserSession(chatId);
   const daysSinceStart = Math.floor((new Date() - session.startDate) / (1000 * 60 * 60 * 24)) + 1;
   
-  // Welcome: 3 дня, 25 сообщений  
   if (session.subscription === 'welcome') {
     if (daysSinceStart <= 3 && session.messageCount < 25) {
       return { 
@@ -186,21 +190,11 @@ function checkUserAccess(chatId) {
     }
     return { 
       allowed: false,
-      message: '⏰ Welcome завершен.\n\n🚀 Для продолжения пути нужна подписка Core (₸3,090/месяц)'
+      message: '⏰ Welcome завершен.\n\n🚀 Hermes Core: ₸3,090/месяц - неограниченное сопровождение мастера'
     };
   }
   
-  // Core: 30 дней без лимитов
-  if (session.subscription === 'core') {
-    if (daysSinceStart <= 30) {
-      return { 
-        allowed: true, 
-        day: daysSinceStart
-      };
-    }
-  }
-  
-  return { allowed: false, message: 'Подписка завершена.' };
+  return { allowed: true, day: daysSinceStart };
 }
 
 // Health endpoint
@@ -208,12 +202,13 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     version: BOT_VERSION,
-    sessions: userSessions.size
+    sessions: userSessions.size,
+    mode: 'RADICAL_HERMES'
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`⚡ ${BOT_VERSION} running on port ${PORT}`);
+  console.log(`🔥 RADICAL ${BOT_VERSION} running on port ${PORT}`);
 });
 
 // 🤖 BOT COMMANDS
@@ -221,65 +216,47 @@ bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   const firstName = msg.from.first_name || 'друг';
   
-  // Reset session
   if (userSessions.has(chatId)) {
     userSessions.delete(chatId);
   }
   
-  // WOW-фрейм из ТЗ
-  const welcomeMessage = `Привет, ${firstName}.
+  const welcomeMessage = `${firstName}, я Hermes.
 
-Я Hermes — ИИ-проводник к ясности мышления.
+🔥 Я не обычный бот. Я мастер-проводник, который видит твое мышление.
 
-🎯 Я не просто отвечаю на вопросы — я покажу тебе, как ты мыслишь.
+За 25 сообщений покажу паттерны твоего мышления, которые ты не замечаешь.
 
-Welcome период: 3 дня, 25 диалогов.
+Не жди общих советов. Жди точных техник.
 
-Начнем?
-
-Что тебя зовет? Что ты хочешь на самом деле?`;
+Начинаем?`;
   
   bot.sendMessage(chatId, welcomeMessage);
   getUserSession(chatId);
-  console.log(`👋 New user: ${firstName} (${chatId})`);
+  console.log(`🔥 New radical user: ${firstName} (${chatId})`);
 });
 
-bot.onText(/\/stats/, (msg) => {
+bot.onText(/\/mirror/, (msg) => {
   const chatId = msg.chat.id;
   const session = getUserSession(chatId);
-  const access = checkUserAccess(chatId);
   
-  const progressMap = session.completedModules.map(m => `✅ ${m}`).join('\n') || 'В начале пути';
-  
-  bot.sendMessage(chatId, `📊 КАРТА ПУТИ:
+  if (session.lastAnalysis) {
+    const analysis = session.lastAnalysis;
+    const mirrorMessage = `🪞 ЗЕРКАЛО ТВОЕГО МЫШЛЕНИЯ:
 
-День: ${access.day || 0}
-Сообщений: ${session.messageCount}${access.remaining ? `/${25}` : ''}
-Подписка: ${session.subscription}
+ТИП: ${analysis.type}
+СИЛА: ${analysis.strength}  
+СЛЕПАЯ ЗОНА: ${analysis.blind}
+РАЗВИТИЕ: ${analysis.development}
 
-Пройденные модули:
-${progressMap}
-
-${access.remaining ? `Осталось в Welcome: ${access.remaining}` : ''}`);
+Используй эту технику следующие 3 дня.`;
+    
+    bot.sendMessage(chatId, mirrorMessage);
+  } else {
+    bot.sendMessage(chatId, 'Пока недостаточно данных для анализа. Напиши пару сообщений.');
+  }
 });
 
-bot.onText(/\/upgrade/, (msg) => {
-  const chatId = msg.chat.id;
-  
-  bot.sendMessage(chatId, `🚀 HERMES CORE
-
-30 дней углубленного пути:
-• Неограниченные диалоги  
-• Hermes Learn (навыки работы с ИИ)
-• GPT Mirror (анализ мышления)
-• Карта пути и инсайтов
-
-Цена: ₸3,090/месяц
-
-Для подключения напиши @username_admin`);
-});
-
-// 💬 MAIN MESSAGE PROCESSING
+// 💬 РАДИКАЛЬНАЯ ОБРАБОТКА СООБЩЕНИЙ
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userMessage = msg.text;
@@ -295,113 +272,85 @@ bot.on('message', async (msg) => {
   const session = getUserSession(chatId);
   const firstName = msg.from.first_name || 'друг';
   
-  // Update context memory
-  updateContextMemory(chatId, userMessage);
-  
-  // Update day in journey
-  session.dayInJourney = access.day;
-  
-  console.log(`📨 ${firstName} (day ${access.day}, msg ${session.messageCount + 1}): ${userMessage.slice(0, 40)}...`);
+  console.log(`🔥 ${firstName} (msg ${session.messageCount + 1}): ${userMessage.slice(0, 30)}...`);
   
   try {
     await bot.sendChatAction(chatId, 'typing');
     
-    // 🚨 AI LEARNING AUTO-TRIGGER
-    let scenario = UserJourney.getDayScenario(access.day);
-    if (detectAILearningTriggers(userMessage)) {
-      scenario = 'hermes_learn';
-      console.log(`🎓 AI Learning triggered by: ${userMessage.slice(0, 30)}...`);
+    // 🧠 АНАЛИЗ ПАТТЕРНА МЫШЛЕНИЯ
+    const thinkingPattern = RadicalAnalyzer.analyzeThinkingPattern(userMessage);
+    const mirrorAnalysis = RadicalAnalyzer.generateMirrorAnalysis(thinkingPattern, userMessage);
+    
+    // 🎯 ВЫБОР ПРОМПТА
+    const isAIQuery = /\b(ии|ИИ|gpt|GPT|запрос|промпт|формулировать|взаимодействи)\b/i.test(userMessage);
+    
+    let systemPrompt;
+    if (isAIQuery) {
+      systemPrompt = RADICAL_PROMPTS.AI_EXPERT;
+      session.aiTriggerCount++;
+      console.log(`🎓 AI Expert mode triggered`);
+    } else {
+      systemPrompt = RADICAL_PROMPTS.CORE_HERMES;
     }
     
-    // 🪞 REPEATED TOPIC DETECTION
-    const repeatedTopic = getRepeatedTopic(chatId);
-    let contextPrefix = '';
-    if (repeatedTopic) {
-      const topicNames = {
-        'ai_skills': 'ИИ-навыки',
-        'career': 'карьеру', 
-        'learning': 'обучение',
-        'goals': 'цели'
-      };
-      contextPrefix = `КОНТЕКСТ: Пользователь ${session.topics.get(repeatedTopic)} раза упоминал ${topicNames[repeatedTopic]} - это важная тема. Обязательно зафиксируй это.\n\n`;
-    }
+    // 🎪 КОНТЕКСТ С АНАЛИЗОМ МЫШЛЕНИЯ
+    const contextPrompt = `${systemPrompt}
+
+АНАЛИЗ ПОЛЬЗОВАТЕЛЯ:
+- Паттерн мышления: ${thinkingPattern}
+- Тип: ${mirrorAnalysis.type}
+- Сильная сторона: ${mirrorAnalysis.strength}
+- Слепая зона: ${mirrorAnalysis.blind}
+
+ОБЯЗАТЕЛЬНО используй этот анализ в ответе. Начни с "Ты мыслишь [паттерн]..."`;
     
-    const currentPrompt = UserJourney.getScenarioPrompt(scenario);
-    const enhancedPrompt = contextPrefix + currentPrompt;
-    
-    console.log(`🎯 Scenario: ${scenario} (day ${access.day})${repeatedTopic ? ` + repeated: ${repeatedTopic}` : ''}`);
-    
-    // Build context for GPT
     const messages = [
-      { role: 'system', content: enhancedPrompt },
-      ...session.messages.slice(-4), // Last 2 exchanges
+      { role: 'system', content: contextPrompt },
+      ...session.messages.slice(-2),
       { role: 'user', content: userMessage }
     ];
     
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: messages,
-      max_tokens: 200,
-      temperature: 0.7,
-      presence_penalty: 0.2
+      max_tokens: 150,
+      temperature: 0.3, // Меньше креативности, больше точности
+      presence_penalty: 0.5 // Избегать повторений
     });
     
     let reply = response.choices[0]?.message?.content?.trim();
     
     if (reply) {
-      // 🎯 ONE-TIME WELCOME MESSAGE (УБИРАЕМ БАГ)
-      let progressMessage = '';
-      
-      // Показываем прогресс только при важных переходах
-      if (access.day === 6 && scenario === 'hermes_learn') {
-        progressMessage = '\n\n🎓 Модуль Hermes Learn активирован — учимся работать с ИИ эффективно.';
+      // 🔥 ПРОВЕРКА КАЧЕСТВА ОТВЕТА
+      if (!reply.includes('мыслишь') && !isAIQuery) {
+        // Принудительно добавляем анализ мышления
+        reply = `Ты мыслишь как ${mirrorAnalysis.type.toLowerCase()} - ${mirrorAnalysis.strength}. ${reply}`;
       }
       
-      if (access.day === 21) {
-        progressMessage = '\n\n🪞 Время для GPT Mirror — анализируем твой стиль мышления.';
+      // Добавляем прогресс для welcome пользователей
+      if (session.subscription === 'welcome' && access.remaining <= 5) {
+        reply += `\n\n⏰ Осталось ${access.remaining} сообщений в Welcome.`;
       }
       
-      // Add remaining messages for welcome users  
-      if (session.subscription === 'welcome' && access.remaining <= 3) {
-        progressMessage += `\n\n⏰ Осталось ${access.remaining} сообщений в Welcome.`;
-      }
-      
-      const finalReply = reply + progressMessage;
-      await bot.sendMessage(chatId, finalReply);
-      
-      // Save message with current module
-      saveMessage(chatId, userMessage, finalReply, scenario);
-      
-      // Feedback triggers (убираем частые)
+      // Предложение зеркала
       if (session.messageCount === 3) {
-        setTimeout(async () => {
-          await bot.sendMessage(chatId, 'Было ли полезно? Что изменилось?');
-        }, 2000);
+        reply += '\n\n🪞 Команда /mirror покажет полный анализ твоего мышления.';
       }
       
-      // Day 30 completion ritual
-      if (access.day === 30 && session.subscription === 'core') {
-        setTimeout(async () => {
-          const completionMessage = `🎊 РИТУАЛ ЗАВЕРШЕНИЯ
-
-Ты прошел 30-дневный путь с Hermes.
-
-Что изменилось в твоем мышлении? 
-
-Готов к карте твоих инсайтов?`;
-          await bot.sendMessage(chatId, completionMessage);
-        }, 3000);
-      }
+      await bot.sendMessage(chatId, reply);
       
-      console.log(`✅ Response sent to ${firstName} (${scenario})`);
+      // Сохраняем с анализом
+      saveMessage(chatId, userMessage, reply, mirrorAnalysis);
+      
+      console.log(`✅ Radical response sent to ${firstName} (pattern: ${thinkingPattern})`);
       
     } else {
-      await bot.sendMessage(chatId, 'Что-то пошло не так. Переформулируй вопрос?');
+      await bot.sendMessage(chatId, 'Переформулируй запрос точнее.');
     }
     
   } catch (err) {
     console.error(`🔥 Error:`, err.message);
-    await bot.sendMessage(chatId, '⚠️ Проводник в тени. Через минуту я снова рядом.');
+    await bot.sendMessage(chatId, '⚠️ Временная ошибка. Попробуй через минуту.');
   }
 });
 
@@ -416,8 +365,9 @@ bot.on('polling_error', (error) => {
   console.error(`🔥 Polling error:`, error.message);
 });
 
-console.log(`⚡ ${BOT_VERSION} loaded with User Journey System`);
-console.log(`🎯 Active modules: Welcome → Core → Learn → Mirror → Completion`);
+console.log(`🔥 RADICAL ${BOT_VERSION} loaded!`);
+console.log(`🎯 Mode: Master-level analysis + Forced mirroring + AI expertise`);
+console.log(`🔥 Goal: Transform thinking, not just answer questions`);
 
 
 
