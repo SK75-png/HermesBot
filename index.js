@@ -1,9 +1,8 @@
-// 📦 Подключение библиотек
 const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
+const OpenAI = require('openai');
 const express = require('express');
 
-// 📌 Assistants API
+// 📌 Environment variables
 const ASSISTANT_ID = process.env.ASSISTANT_ID;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -13,76 +12,45 @@ if (!ASSISTANT_ID || !OPENAI_API_KEY || !TELEGRAM_TOKEN) {
   process.exit(1);
 }
 
-// 🌐 Express сервер
+// 🌐 Express server
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: 'MVP_1.1_FIXED', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    version: 'ASSISTANT_API_v1.0', 
+    timestamp: new Date().toISOString() 
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Hermes 1.0 listening on port ${PORT}`);
+  console.log(`🚀 Hermes Assistant Bot running on port ${PORT}`);
 });
 
-// 🤖 Telegram бот
+// 🤖 Telegram bot
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
-// 🧠 Контекст сессий
+// 🧠 Store threads for each user
 const userThreads = new Map();
 
-// 📤 Получение ответа от Assistants API
-async function getAssistantReply(chatId, userMessage) {
-  let threadId = userThreads.get(chatId);
-
-  // 1. Создать нить если новой пользователь
-  if (!threadId) {
-    const threadRes = await axios.post(
-      'https://api.openai.com/v1/threads',
-      {},
-      { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } }
-    );
-    threadId = threadRes.data.id;
-    userThreads.set(chatId, threadId);
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+  
+  try {
+    // Create new thread for user
+    const thread = await openai.beta.threads.create();
+    userThreads.set(chatId, thread.id);
+    
+    bot.sendMessage(chatId, '🧠 Привет! Я Hermes с GPT Assistant. Задавайте вопросы!');
+    console.log(`👋 New user started: ${chatId}`);
+  } catch (error) {
+    console.error('Error creating thread:', error);
+    bot.sendMessage(chatId, '⚠️ Ошибка инициализации. Попробуйте позже.');
   }
+});
 
-  // 2. Добавить сообщение пользователя
-  await axios.post(
-    `https://api.openai.com/v1/threads/${threadId}/messages`,
-    { role: 'user', content: userMessage },
-    { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } }
-  );
-
-  // 3. Запустить ассистента
-  const run = await axios.post(
-    `https://api.openai.com/v1/threads/${threadId}/runs`,
-    { assistant_id: ASSISTANT_ID },
-    { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } }
-  );
-
-  // 4. Ждать завершения выполнения
-  let status = 'queued';
-  let result;
-  while (status !== 'completed') {
-    await new Promise((r) => setTimeout(r, 1000));
-    result = await axios.get(
-      `https://api.openai.com/v1/threads/${threadId}/runs/${run.data.id}`,
-      { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } }
-    );
-    status = result.data.status;
-  }
-
-  // 5. Получить сообщение ассистента
-  const messages = await axios.get(
-    `https://api.openai.com/v1/threads/${threadId}/messages`,
-    { headers: { Authorization: `Bearer ${OPENAI_API_KEY}` } }
-  );
-
-  const reply = messages.data.data.find((m) => m.role === 'assistant');
-  return reply?.content?.[0]?.text?.value || '⚠️ Не удалось получить ответ.';
-}
-
-// 💬 Основная логика
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userMessage = msg.text;
@@ -91,13 +59,62 @@ bot.on('message', async (msg) => {
 
   try {
     await bot.sendChatAction(chatId, 'typing');
-    const reply = await getAssistantReply(chatId, userMessage);
-    await bot.sendMessage(chatId, reply, { parse_mode: 'Markdown' });
-  } catch (err) {
-    console.error('🔥 Ошибка:', err.message);
-    await bot.sendMessage(chatId, '⚠️ Временная ошибка. Попробуй ещё раз.');
+
+    let threadId = userThreads.get(chatId);
+    
+    // Create thread if doesn't exist
+    if (!threadId) {
+      const thread = await openai.beta.threads.create();
+      threadId = thread.id;
+      userThreads.set(chatId, threadId);
+      console.log(`🧵 Created thread for user: ${chatId}`);
+    }
+
+    // Add user message to thread
+    await openai.beta.threads.messages.create(threadId, {
+      role: 'user',
+      content: userMessage
+    });
+
+    // Run assistant
+    const run = await openai.beta.threads.runs.create(threadId, {
+      assistant_id: ASSISTANT_ID
+    });
+
+    console.log(`🏃 Started run for user ${chatId}: ${run.id}`);
+
+    // Wait for completion
+    let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+    
+    while (runStatus.status === 'running' || runStatus.status === 'queued') {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+    }
+
+    if (runStatus.status === 'completed') {
+      // Get assistant response
+      const messages = await openai.beta.threads.messages.list(threadId);
+      const response = messages.data[0].content[0].text.value;
+      
+      await bot.sendMessage(chatId, response);
+      console.log(`✅ Response sent to user: ${chatId}`);
+    } else {
+      console.error(`❌ Run failed with status: ${runStatus.status}`);
+      await bot.sendMessage(chatId, '⚠️ Ошибка обработки. Попробуйте еще раз.');
+    }
+
+  } catch (error) {
+    console.error('🔥 Error processing message:', error);
+    await bot.sendMessage(chatId, '⚠️ Произошла ошибка. Попробуйте позже.');
   }
 });
+
+// Error handling
+bot.on('polling_error', (error) => {
+  console.error('🔥 Polling error:', error);
+});
+
+console.log('🚀 Hermes Assistant Bot started with OpenAI Assistant API');
 
 
 
