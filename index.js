@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    version: 'ASSISTANT_API_v1.0', 
+    version: 'ASSISTANT_API_v1.1_FIXED', 
     timestamp: new Date().toISOString() 
   });
 });
@@ -83,28 +83,52 @@ bot.on('message', async (msg) => {
 
     console.log(`🏃 Started run for user ${chatId}: ${run.id}`);
 
-    // Wait for completion
+    // Wait for completion with timeout and better status handling
     let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+    let attempts = 0;
+    const maxAttempts = 30; // 60 seconds max wait
     
-    while (runStatus.status === 'running' || runStatus.status === 'queued') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    while (
+      (runStatus.status === 'running' || 
+       runStatus.status === 'queued' || 
+       runStatus.status === 'in_progress') && 
+      attempts < maxAttempts
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
       runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+      attempts++;
+      console.log(`⏳ Waiting for run completion. Status: ${runStatus.status}, Attempt: ${attempts}`);
     }
+
+    console.log(`🏁 Final run status: ${runStatus.status}`);
 
     if (runStatus.status === 'completed') {
       // Get assistant response
-      const messages = await openai.beta.threads.messages.list(threadId);
-      const response = messages.data[0].content[0].text.value;
+      const messages = await openai.beta.threads.messages.list(threadId, {
+        limit: 1
+      });
       
-      await bot.sendMessage(chatId, response);
-      console.log(`✅ Response sent to user: ${chatId}`);
+      if (messages.data && messages.data.length > 0) {
+        const response = messages.data[0].content[0].text.value;
+        await bot.sendMessage(chatId, response);
+        console.log(`✅ Response sent to user: ${chatId}`);
+      } else {
+        await bot.sendMessage(chatId, '⚠️ Не удалось получить ответ от Assistant.');
+      }
+    } else if (runStatus.status === 'failed') {
+      console.error(`❌ Run failed: ${JSON.stringify(runStatus.last_error)}`);
+      await bot.sendMessage(chatId, '⚠️ Ошибка обработки запроса. Попробуйте еще раз.');
+    } else if (attempts >= maxAttempts) {
+      console.error(`⏰ Run timeout. Final status: ${runStatus.status}`);
+      await bot.sendMessage(chatId, '⏰ Запрос занимает слишком много времени. Попробуйте еще раз.');
     } else {
-      console.error(`❌ Run failed with status: ${runStatus.status}`);
-      await bot.sendMessage(chatId, '⚠️ Ошибка обработки. Попробуйте еще раз.');
+      console.error(`❓ Unexpected run status: ${runStatus.status}`);
+      await bot.sendMessage(chatId, '⚠️ Неожиданная ошибка. Попробуйте еще раз.');
     }
 
   } catch (error) {
-    console.error('🔥 Error processing message:', error);
+    console.error('🔥 Error processing message:', error.message);
+    console.error('🔥 Full error:', error);
     await bot.sendMessage(chatId, '⚠️ Произошла ошибка. Попробуйте позже.');
   }
 });
@@ -112,6 +136,12 @@ bot.on('message', async (msg) => {
 // Error handling
 bot.on('polling_error', (error) => {
   console.error('🔥 Polling error:', error);
+});
+
+process.on('SIGTERM', () => {
+  console.log('♻️ Graceful shutdown...');
+  bot.stopPolling();
+  process.exit(0);
 });
 
 console.log('🚀 Hermes Assistant Bot started with OpenAI Assistant API');
